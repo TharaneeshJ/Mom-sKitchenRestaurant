@@ -66,7 +66,7 @@ export const CategoryFilter: React.FC<CategoryFilterProps> = ({
                 <button
                     onClick={() => onSelectCategory('All')}
                     className={`shrink-0 px-8 py-3 rounded-2xl text-[11px] font-black uppercase tracking-[0.15em] whitespace-nowrap transition-all border shadow-sm active:scale-95 ${activeCategory === 'All'
-                        ? 'bg-black text-white border-black shadow-xl shadow-black/10 scale-105'
+                        ? 'bg-black text-white border-black scale-105'
                         : 'bg-white text-brand-muted border-brand-border/60 hover:border-black hover:text-black'
                         }`}
                 >
