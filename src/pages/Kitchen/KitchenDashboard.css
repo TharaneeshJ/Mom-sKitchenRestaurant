@@ -1,0 +1,375 @@
+/* Kitchen Dashboard - Elegant Minimal Style */
+.kitchen-page {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    padding: 2rem;
+}
+
+.page-header {
+    margin-bottom: 0.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.btn-icon {
+    background: transparent;
+    border: none;
+    color: hsl(var(--muted-foreground));
+    cursor: pointer;
+    padding: 0.5rem;
+    border-radius: 0.5rem;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-icon:hover {
+    background-color: hsl(var(--muted));
+    color: hsl(var(--foreground));
+}
+
+.kitchen-page:fullscreen {
+    background-color: hsl(var(--background));
+    padding: 2rem;
+    overflow-y: auto;
+}
+
+.page-title {
+    font-family: var(--font-serif);
+    font-size: 2.25rem;
+    font-weight: 700;
+    color: hsl(var(--foreground));
+    letter-spacing: -0.03em;
+}
+
+.page-subtitle {
+    font-family: var(--font-sans);
+    color: hsl(var(--muted-foreground));
+    font-size: 0.95rem;
+    font-weight: 500;
+    margin-top: 0.25rem;
+}
+
+
+
+/* Kanban Board Grid */
+.kanban-board {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1.5rem;
+    height: 100%;
+    align-items: start;
+    overflow-x: auto;
+    padding-bottom: 1rem;
+}
+
+.kanban-column {
+    background-color: hsl(var(--muted));
+    border-radius: 1rem;
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100vh - 200px);
+    border: 1px solid hsl(var(--border));
+}
+
+.column-header {
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    background-color: hsl(var(--card));
+    border-radius: 1rem 1rem 0 0;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.column-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: hsl(var(--foreground));
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-family: var(--font-sans);
+    margin: 0;
+}
+
+.column-count {
+    background-color: hsl(var(--muted));
+    color: hsl(var(--foreground));
+    padding: 0.2rem 0.6rem;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border: 1px solid hsl(var(--border));
+}
+
+.column-content {
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    overflow-y: auto;
+    flex: 1;
+}
+
+/* Scrollbar tweaks for columns */
+.column-content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.column-content::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.column-content::-webkit-scrollbar-thumb {
+    background-color: rgba(0, 0, 0, 0.1);
+    border-radius: 3px;
+}
+
+.empty-column-state {
+    text-align: center;
+    padding: 2rem 1rem;
+    color: hsl(var(--muted-foreground));
+    font-size: 0.85rem;
+    font-style: italic;
+    border: 1px dashed hsl(var(--border));
+    border-radius: 0.75rem;
+    margin-top: 0.5rem;
+}
+
+.order-card {
+    background-color: hsl(var(--card));
+    /* White */
+    border: 1px solid hsl(var(--border));
+    border-radius: 12px;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+    transition: all 0.3s ease;
+    height: 100%;
+}
+
+.order-card:hover {
+    box-shadow: 0 12px 24px -10px rgba(0, 0, 0, 0.1);
+    transform: translateY(-4px);
+    border-color: hsl(var(--muted-foreground));
+}
+
+.order-header {
+    background-color: hsl(var(--muted));
+    /* Stone 100 */
+    padding: 1.25rem;
+    border-bottom: 1px solid hsl(var(--border));
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.table-number {
+    font-family: var(--font-serif);
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: hsl(var(--foreground));
+}
+
+.customer-name {
+    font-family: var(--font-sans);
+    font-size: 0.85rem;
+    color: hsl(var(--muted-foreground));
+    font-weight: 500;
+}
+
+.order-time {
+    font-family: var(--font-sans);
+    font-size: 0.75rem;
+    color: hsl(var(--muted-foreground));
+    margin-top: 4px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* Status Badge - Minimal Caps */
+.status-badge {
+    padding: 0.35rem 0.75rem;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.status-pending {
+    background-color: #fff7ed;
+    color: #c2410c;
+    border: 1px solid #ffedd5;
+}
+
+.status-cooking {
+    background-color: #ecfdf5;
+    color: #15803d;
+    /* Green */
+    border: 1px solid #d1fae5;
+}
+
+.status-ready {
+    background-color: #f0fdf4;
+    color: #166534;
+    border: 1px solid #bbf7d0;
+}
+
+.status-served {
+    background-color: #eff6ff;
+    color: #1e3a8a;
+    border: 1px solid #dbeafe;
+}
+
+.status-paid {
+    background-color: #dcfce7;
+    color: #166534;
+    border: 1px solid #bbf7d0;
+    font-weight: 800;
+}
+
+.status-unpaid {
+    background-color: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+    font-weight: 800;
+}
+
+.order-items {
+    padding: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    flex: 1;
+}
+
+.order-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    font-size: 0.95rem;
+}
+
+.item-qty {
+    background-color: hsl(var(--foreground));
+    /* Black */
+    color: hsl(var(--background));
+    /* White */
+    min-width: 1.5rem;
+    height: 1.5rem;
+    border-radius: 4px;
+    /* Slightly sharper */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 0.75rem;
+    flex-shrink: 0;
+}
+
+.item-name {
+    font-family: var(--font-serif);
+    color: hsl(var(--foreground));
+    font-weight: 500;
+    font-size: 1rem;
+    line-height: 1.4;
+}
+
+.order-actions {
+    padding: 1.25rem;
+    border-top: 1px solid hsl(var(--border));
+    background-color: hsl(var(--card));
+    display: flex;
+    gap: 0.5rem;
+}
+
+/* Minimal Buttons */
+.btn {
+    border: none;
+    cursor: pointer;
+    font-family: var(--font-sans);
+    transition: all 0.2s;
+    font-size: 0.8rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    border-radius: 8px;
+    font-weight: 700;
+    padding: 0.75rem 1rem;
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-primary {
+    background-color: white;
+    border: 1px solid hsl(var(--border));
+    color: hsl(var(--foreground));
+}
+
+.btn-primary:hover {
+    background-color: hsl(var(--foreground));
+    color: white;
+    border-color: hsl(var(--foreground));
+}
+
+.btn-success {
+    background-color: hsl(var(--foreground));
+    /* Black */
+    color: white;
+    border: 1px solid hsl(var(--foreground));
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.btn-success:hover {
+    background-color: black;
+
+    transform: translateY(-1px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+@media (max-width: 1200px) {
+    .kanban-board {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .kitchen-page {
+        padding: 1rem;
+        gap: 1.5rem;
+    }
+
+    .page-title {
+        font-size: 1.75rem;
+    }
+
+    .kanban-board {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+        padding-bottom: 2rem;
+        height: auto;
+        overflow-y: visible;
+        overflow-x: hidden;
+    }
+
+    .kanban-column {
+        max-height: none;
+        height: auto;
+    }
+
+    .column-content {
+        max-height: 500px;
+    }
+}
