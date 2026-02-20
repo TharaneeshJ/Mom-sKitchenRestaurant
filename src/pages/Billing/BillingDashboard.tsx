@@ -58,6 +58,40 @@ export const BillingDashboard: React.FC = () => {
         return result;
     }, [orders, searchQuery, filterStatus]);
 
+    const groupedOrders = useMemo(() => {
+        const groups: { date: string, orders: any[] }[] = [];
+        let currentGroup: { date: string, orders: any[] } | null = null;
+
+        filteredOrders.forEach(order => {
+            const orderDate = new Date(order.timestamp);
+            const today = new Date();
+            const yesterday = new Date();
+            yesterday.setDate(yesterday.getDate() - 1);
+
+            let dateStr = '';
+            if (orderDate.toDateString() === today.toDateString()) {
+                dateStr = 'Today';
+            } else if (orderDate.toDateString() === yesterday.toDateString()) {
+                dateStr = 'Yesterday';
+            } else {
+                dateStr = orderDate.toLocaleDateString([], {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
+            }
+
+            if (!currentGroup || currentGroup.date !== dateStr) {
+                currentGroup = { date: dateStr, orders: [] };
+                groups.push(currentGroup);
+            }
+            currentGroup.orders.push(order);
+        });
+
+        return groups;
+    }, [filteredOrders]);
+
     return (
         <div className="billing-page" ref={dashboardRef}>
             <header className="page-header">
@@ -132,42 +166,49 @@ export const BillingDashboard: React.FC = () => {
                         </tr>
                     </thead>
                     <tbody>
-                        {filteredOrders.length > 0 ? (
-                            filteredOrders.map((order) => (
-                                <tr key={order.id} onClick={() => setSelectedOrder(order)} style={{ cursor: 'pointer' }}>
-                                    <td className="font-medium">{order.customerName || 'Guest'}</td>
-                                    <td>{new Date(order.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
-                                    <td>{order.tableId}</td>
-                                    <td>
-                                        <div className="truncate-items" title={order.items.map(i => `${i.quantity}x ${i.name}`).join(', ')}>
-                                            {order.items.length} items
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <span className={`status-badge status-${(order.status || '').toLowerCase() === 'paid' ? 'served' : (order.status || '').toLowerCase()}`}>
-                                            {/* If paid, it means it's completed/served. Otherwise show current status */}
-                                            {(order.status || '').toLowerCase() === 'paid' ? 'Served' : order.status}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <div className="payment-details">
-                                            <span className={`status-badge status-${(order.status || '').toLowerCase() === 'paid' ? 'paid' : 'unpaid'}`}>
-                                                {(order.status || '').toLowerCase() === 'paid' ? 'Paid' : 'Pending'}
-                                            </span>
-                                            {order.paymentMethod ? (
-                                                <span className="payment-via">
-                                                    {order.paymentMethod}
+                        {groupedOrders.length > 0 ? (
+                            groupedOrders.map((group) => (
+                                <React.Fragment key={group.date}>
+                                    <tr className="date-header-row">
+                                        <td colSpan={7}>{group.date}</td>
+                                    </tr>
+                                    {group.orders.map((order) => (
+                                        <tr key={order.id} onClick={() => setSelectedOrder(order)} style={{ cursor: 'pointer' }}>
+                                            <td className="font-medium">{order.customerName || 'Guest'}</td>
+                                            <td>{new Date(order.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
+                                            <td>{order.tableId}</td>
+                                            <td>
+                                                <div className="truncate-items" title={order.items.map(i => `${i.quantity}x ${i.name}`).join(', ')}>
+                                                    {order.items.length} items
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <span className={`status-badge status-${(order.status || '').toLowerCase() === 'paid' ? 'served' : (order.status || '').toLowerCase()}`}>
+                                                    {/* If paid, it means it's completed/served. Otherwise show current status */}
+                                                    {(order.status || '').toLowerCase() === 'paid' ? 'Served' : order.status}
                                                 </span>
-                                            ) : (
-                                                <span className="text-xs text-muted-foreground">
-                                                    -
-                                                </span>
-                                            )}
-                                        </div>
-                                    </td>
-                                    <td className="font-semibold font-mono">₹{order.totalAmount.toLocaleString()}</td>
+                                            </td>
+                                            <td>
+                                                <div className="payment-details">
+                                                    <span className={`status-badge status-${(order.status || '').toLowerCase() === 'paid' ? 'paid' : 'unpaid'}`}>
+                                                        {(order.status || '').toLowerCase() === 'paid' ? 'Paid' : 'Pending'}
+                                                    </span>
+                                                    {order.paymentMethod ? (
+                                                        <span className="payment-via">
+                                                            {order.paymentMethod}
+                                                        </span>
+                                                    ) : (
+                                                        <span className="text-xs text-muted-foreground">
+                                                            -
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </td>
+                                            <td className="font-semibold font-mono">₹{order.totalAmount.toLocaleString()}</td>
 
-                                </tr>
+                                        </tr>
+                                    ))}
+                                </React.Fragment>
                             ))
                         ) : (
                             <tr>

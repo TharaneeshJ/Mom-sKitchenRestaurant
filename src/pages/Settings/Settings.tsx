@@ -97,165 +97,185 @@ export const Settings: React.FC = () => {
         setIsAdding(true);
     };
 
+    // Prevent scrolling when modal is open
+    React.useEffect(() => {
+        if (isAdding) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+        };
+    }, [isAdding]);
+
     return (
         <div className="settings-page">
             <header className="page-header">
                 <h1 className="page-title">Menu Management</h1>
                 <button
                     className="add-btn"
-                    onClick={() => setIsAdding(!isAdding)}
+                    onClick={() => setIsAdding(true)}
                 >
-                    {isAdding ? <X size={18} /> : <Plus size={18} />}
-                    {isAdding ? 'Cancel' : 'Add'}
+                    <Plus size={18} />
+                    Add
                 </button>
             </header>
 
             {isAdding && (
-                <div className="dish-form-container card-animate">
-                    <form onSubmit={handleSubmit} className="dish-form">
-                        <div className="form-grid">
-                            <div className="form-group">
-                                <label>Dish Name</label>
-                                <input
-                                    type="text"
-                                    value={formData.name}
-                                    onChange={e => setFormData({ ...formData, name: e.target.value })}
-                                    placeholder="e.g. Special Chicken Biryani"
-                                    required
-                                />
-                            </div>
-                            <div className="form-group">
-                                <label>Price</label>
-                                <div className="price-input-wrapper">
-                                    <span className="currency-symbol">₹</span>
+                <div className="modal-overlay" onClick={resetForm}>
+                    <div className="dish-form-container modal-card animate-in fade-in zoom-in duration-300" onClick={e => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h2 className="modal-title">{editingId ? 'Edit Dish' : 'Add New Dish'}</h2>
+                            <button className="close-modal-btn" onClick={resetForm}>
+                                <X size={20} />
+                            </button>
+                        </div>
+                        <form onSubmit={handleSubmit} className="dish-form">
+                            <div className="form-grid">
+                                <div className="form-group">
+                                    <label>Dish Name</label>
                                     <input
-                                        type="number"
-                                        value={formData.price || ''}
-                                        onChange={e => setFormData({ ...formData, price: e.target.value === '' ? undefined : Number(e.target.value) })}
-                                        onKeyDown={(e) => {
-                                            if (['e', 'E', '+', '-'].includes(e.key)) {
-                                                e.preventDefault();
-                                            }
-                                        }}
-                                        placeholder="Amount"
-                                        step="any"
+                                        type="text"
+                                        value={formData.name}
+                                        onChange={e => setFormData({ ...formData, name: e.target.value })}
+                                        placeholder="e.g. Special Chicken Biryani"
                                         required
                                     />
                                 </div>
-                            </div>
-                            <div className="form-group">
-                                <label>Category</label>
-                                <div className={`custom-dropdown ${isDropdownOpen ? 'open' : ''}`}>
-                                    <div
-                                        className="dropdown-trigger"
-                                        onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                                    >
-                                        <span>{formData.category}</span>
-                                        <ChevronDown size={18} />
+                                <div className="form-group">
+                                    <label>Price</label>
+                                    <div className="price-input-wrapper">
+                                        <span className="currency-symbol">₹</span>
+                                        <input
+                                            type="number"
+                                            value={formData.price || ''}
+                                            onChange={e => setFormData({ ...formData, price: e.target.value === '' ? undefined : Number(e.target.value) })}
+                                            onKeyDown={(e) => {
+                                                if (['e', 'E', '+', '-'].includes(e.key)) {
+                                                    e.preventDefault();
+                                                }
+                                            }}
+                                            placeholder="Amount"
+                                            step="any"
+                                            required
+                                        />
                                     </div>
-                                    {isDropdownOpen && (
-                                        <div className="dropdown-options">
-                                            {categories.map((cat) => (
-                                                <div
-                                                    key={cat}
-                                                    className={`dropdown-option ${formData.category === cat ? 'selected' : ''}`}
-                                                    onClick={() => {
-                                                        setFormData({ ...formData, category: cat });
-                                                        setIsDropdownOpen(false);
-                                                    }}
-                                                >
-                                                    {cat}
-                                                    {formData.category === cat && <Check size={14} />}
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
                                 </div>
-                            </div>
-                            <div className="form-group image-grid-item">
-                                <label>Dish Image</label>
-                                <div className="image-picker-container">
-                                    <input
-                                        type="file"
-                                        id="dish-image"
-                                        accept="image/*"
-                                        onChange={(e) => {
-                                            const file = e.target.files?.[0];
-                                            if (file) {
-                                                const reader = new FileReader();
-                                                reader.onloadend = () => {
-                                                    setFormData({ ...formData, image: reader.result as string });
-                                                };
-                                                reader.readAsDataURL(file);
-                                            }
-                                        }}
-                                        className="hidden-input"
-                                    />
-
-                                    {!formData.image ? (
-                                        <label htmlFor="dish-image" className="upload-dropzone">
-                                            <div className="upload-content">
-                                                <div className="upload-icon-circle">
-                                                    <Plus size={20} />
-                                                </div>
-                                                <div className="upload-text">
-                                                    <span className="main-text">Click to Upload</span>
-                                                    <span className="sub-text">JPG, PNG or WEBP</span>
-                                                </div>
-                                            </div>
-                                        </label>
-                                    ) : (
-                                        <div className="image-preview-wrapper">
-                                            <img src={formData.image} alt="Preview" className="selected-image" />
-                                            <div className="image-actions-overlay">
-                                                <div className="action-btn-group">
-                                                    <button
-                                                        type="button"
-                                                        className="action-icon-btn remove"
-                                                        onClick={() => setFormData({ ...formData, image: '' })}
-                                                        title="Remove Image"
+                                <div className="form-group">
+                                    <label>Category</label>
+                                    <div className={`custom-dropdown ${isDropdownOpen ? 'open' : ''}`}>
+                                        <div
+                                            className="dropdown-trigger"
+                                            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                                        >
+                                            <span>{formData.category}</span>
+                                            <ChevronDown size={18} />
+                                        </div>
+                                        {isDropdownOpen && (
+                                            <div className="dropdown-options">
+                                                {categories.map((cat) => (
+                                                    <div
+                                                        key={cat}
+                                                        className={`dropdown-option ${formData.category === cat ? 'selected' : ''}`}
+                                                        onClick={() => {
+                                                            setFormData({ ...formData, category: cat });
+                                                            setIsDropdownOpen(false);
+                                                        }}
                                                     >
-                                                        <Trash2 size={18} />
-                                                    </button>
-                                                    <label htmlFor="dish-image" className="action-icon-btn change" title="Change Image">
-                                                        <Camera size={18} />
-                                                    </label>
+                                                        {cat}
+                                                        {formData.category === cat && <Check size={14} />}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                                <div className="form-group image-grid-item">
+                                    <label>Dish Image</label>
+                                    <div className="image-picker-container">
+                                        <input
+                                            type="file"
+                                            id="dish-image"
+                                            accept="image/*"
+                                            onChange={(e) => {
+                                                const file = e.target.files?.[0];
+                                                if (file) {
+                                                    const reader = new FileReader();
+                                                    reader.onloadend = () => {
+                                                        setFormData({ ...formData, image: reader.result as string });
+                                                    };
+                                                    reader.readAsDataURL(file);
+                                                }
+                                            }}
+                                            className="hidden-input"
+                                        />
+
+                                        {!formData.image ? (
+                                            <label htmlFor="dish-image" className="upload-dropzone">
+                                                <div className="upload-content">
+                                                    <div className="upload-icon-circle">
+                                                        <Plus size={20} />
+                                                    </div>
+                                                    <div className="upload-text">
+                                                        <span className="main-text">Click to Upload</span>
+                                                        <span className="sub-text">JPG, PNG or WEBP</span>
+                                                    </div>
+                                                </div>
+                                            </label>
+                                        ) : (
+                                            <div className="image-preview-wrapper">
+                                                <img src={formData.image} alt="Preview" className="selected-image" />
+                                                <div className="image-actions-overlay">
+                                                    <div className="action-btn-group">
+                                                        <button
+                                                            type="button"
+                                                            className="action-icon-btn remove"
+                                                            onClick={() => setFormData({ ...formData, image: '' })}
+                                                            title="Remove Image"
+                                                        >
+                                                            <Trash2 size={18} />
+                                                        </button>
+                                                        <label htmlFor="dish-image" className="action-icon-btn change" title="Change Image">
+                                                            <Camera size={18} />
+                                                        </label>
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                    )}
+                                        )}
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                        <div className="form-actions-bar">
-                            <div className="dietary-container">
-                                <label className="dietary-option">
-                                    <input
-                                        type="radio"
-                                        name="dietary"
-                                        checked={formData.isVeg === true}
-                                        onChange={() => setFormData({ ...formData, isVeg: true })}
-                                    />
-                                    <span className="thick-checkbox"></span>
-                                    <span className="dietary-label">Veg</span>
-                                </label>
-                                <label className="dietary-option">
-                                    <input
-                                        type="radio"
-                                        name="dietary"
-                                        checked={formData.isVeg === false}
-                                        onChange={() => setFormData({ ...formData, isVeg: false })}
-                                    />
-                                    <span className="thick-checkbox"></span>
-                                    <span className="dietary-label">Non-Veg</span>
-                                </label>
+                            <div className="form-actions-bar">
+                                <div className="dietary-container">
+                                    <label className="dietary-option">
+                                        <input
+                                            type="radio"
+                                            name="dietary"
+                                            checked={formData.isVeg === true}
+                                            onChange={() => setFormData({ ...formData, isVeg: true })}
+                                        />
+                                        <span className="thick-checkbox"></span>
+                                        <span className="dietary-label">Veg</span>
+                                    </label>
+                                    <label className="dietary-option">
+                                        <input
+                                            type="radio"
+                                            name="dietary"
+                                            checked={formData.isVeg === false}
+                                            onChange={() => setFormData({ ...formData, isVeg: false })}
+                                        />
+                                        <span className="thick-checkbox"></span>
+                                        <span className="dietary-label">Non-Veg</span>
+                                    </label>
+                                </div>
+                                <button type="submit" className="save-btn" disabled={isSaving}>
+                                    {isSaving ? <span className="loader-small"></span> : <Check size={18} />}
+                                    {isSaving ? 'Saving...' : (editingId ? 'Update Dish' : 'Save Dish')}
+                                </button>
                             </div>
-                            <button type="submit" className="save-btn" disabled={isSaving}>
-                                {isSaving ? <span className="loader-small"></span> : <Check size={18} />}
-                                {isSaving ? 'Saving...' : (editingId ? 'Update Dish' : 'Save Dish')}
-                            </button>
-                        </div>
-                    </form>
+                        </form>
+                    </div>
                 </div>
             )}
 
