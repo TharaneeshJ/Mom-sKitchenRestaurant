@@ -2,6 +2,7 @@
 import React, { useMemo } from 'react';
 import { useRestaurant } from '../../context/RestaurantContext';
 import { Search, Filter, Maximize2, Minimize2 } from 'lucide-react';
+import type { Order, OrderItem } from '../../types';
 import './BillingDashboard.css';
 
 export const BillingDashboard: React.FC = () => {
@@ -31,7 +32,7 @@ export const BillingDashboard: React.FC = () => {
     // Sorting by latest first
 
 
-    const [selectedOrder, setSelectedOrder] = React.useState<any>(null);
+    const [selectedOrder, setSelectedOrder] = React.useState<Order | null>(null);
     const [searchQuery, setSearchQuery] = React.useState('');
     const [filterStatus, setFilterStatus] = React.useState<'all' | 'paid' | 'unpaid'>('all');
     const [showFilterMenu, setShowFilterMenu] = React.useState(false);
@@ -59,8 +60,8 @@ export const BillingDashboard: React.FC = () => {
     }, [orders, searchQuery, filterStatus]);
 
     const groupedOrders = useMemo(() => {
-        const groups: { date: string, orders: any[] }[] = [];
-        let currentGroup: { date: string, orders: any[] } | null = null;
+        const groups: { date: string, orders: Order[] }[] = [];
+        let currentGroup: { date: string, orders: Order[] } | null = null;
 
         filteredOrders.forEach(order => {
             const orderDate = new Date(order.timestamp);
@@ -178,7 +179,7 @@ export const BillingDashboard: React.FC = () => {
                                             <td>{new Date(order.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
                                             <td>{order.tableId}</td>
                                             <td>
-                                                <div className="truncate-items" title={order.items.map(i => `${i.quantity}x ${i.name}`).join(', ')}>
+                                                <div className="truncate-items" title={order.items.map((i: OrderItem) => `${i.quantity}x ${i.name}`).join(', ')}>
                                                     {order.items.length} items
                                                 </div>
                                             </td>
@@ -256,7 +257,7 @@ export const BillingDashboard: React.FC = () => {
 
                             <div className="order-items-list">
                                 <h3 className="text-sm font-semibold mb-2">Order Items</h3>
-                                {selectedOrder.items.map((item: any, idx: number) => (
+                                {selectedOrder.items.map((item: OrderItem, idx: number) => (
                                     <div key={idx} className="flex justify-between py-2 border-b last:border-0">
                                         <div className="flex gap-2">
                                             <span className="font-bold">{item.quantity}x</span>
