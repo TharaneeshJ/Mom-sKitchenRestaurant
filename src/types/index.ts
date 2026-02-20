@@ -40,6 +40,8 @@ export interface OrderItemPayload {
     name: string;
     price: number;
     qty: number;
+    image?: string;
+    category?: string;
 }
 
 export interface OrderPayload {

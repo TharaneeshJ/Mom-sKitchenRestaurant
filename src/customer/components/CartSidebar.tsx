@@ -71,7 +71,13 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({
             <div className="p-3 md:p-4 flex-1 overflow-y-auto custom-scrollbar">
                 {items.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-12 text-brand-muted/40">
-                        <div className="w-16 h-16 bg-brand-background rounded-full flex items-center justify-center text-3xl mb-4 grayscale opacity-30">🛒</div>
+                        <div className="w-16 h-16 bg-brand-background rounded-full flex items-center justify-center mb-4 opacity-30">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-brand-muted">
+                                <circle cx="9" cy="21" r="1"></circle>
+                                <circle cx="20" cy="21" r="1"></circle>
+                                <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+                            </svg>
+                        </div>
                         <p className="font-bold text-sm text-brand-text/60">Cart is Empty</p>
                         <p className="text-[11px] mt-1 text-center max-w-[140px]">Browse our menu and add your favorite dishes.</p>
                     </div>
@@ -79,8 +85,18 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({
                     <div className="space-y-4 mb-8">
                         {items.map((item, idx) => (
                             <div key={`${item.name}-${idx}`} className="flex items-center gap-4 group">
-                                <div className="w-14 h-14 rounded-2xl bg-brand-background flex items-center justify-center text-2xl shrink-0 shadow-sm border border-brand-border/30 group-hover:scale-105 transition-all duration-300">
-                                    🍽️
+                                <div className="w-14 h-14 rounded-2xl bg-brand-background flex items-center justify-center text-2xl shrink-0 shadow-sm border border-brand-border/30 group-hover:scale-105 transition-all duration-300 overflow-hidden">
+                                    {item.image ? (
+                                        <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                                    ) : (
+                                        <div className="w-full h-full flex items-center justify-center bg-brand-background">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-brand-muted/40">
+                                                <path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"></path>
+                                                <path d="M7 2v20"></path>
+                                                <path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"></path>
+                                            </svg>
+                                        </div>
+                                    )}
                                 </div>
                                 <div className="flex-1 min-w-0">
                                     <div className="flex justify-between items-baseline">

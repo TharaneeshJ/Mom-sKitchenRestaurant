@@ -122,7 +122,7 @@ export const CustomerPortal: React.FC = () => {
                 if (item) {
                     count += qty;
                     price += item.price * qty;
-                    items.push({ name: item.name, price: item.price, qty });
+                    items.push({ name: item.name, price: item.price, qty, image: item.image, category: item.category });
                 }
             }
         }
