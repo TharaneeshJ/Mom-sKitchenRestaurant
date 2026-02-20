@@ -14,6 +14,21 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
     const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
     const closeSidebar = () => setIsSidebarOpen(false);
 
+    // Prevent body scroll when mobile sidebar is open
+    React.useEffect(() => {
+        if (isSidebarOpen) {
+            document.body.style.overflow = 'hidden';
+            document.body.style.height = '100vh';
+        } else {
+            document.body.style.overflow = 'unset';
+            document.body.style.height = 'unset';
+        }
+        return () => {
+            document.body.style.overflow = 'unset';
+            document.body.style.height = 'unset';
+        };
+    }, [isSidebarOpen]);
+
     return (
         <div className="dashboard-container">
             {/* Mobile Header */}

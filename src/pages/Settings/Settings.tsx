@@ -124,7 +124,7 @@ export const Settings: React.FC = () => {
 
             {isAdding && (
                 <div className="modal-overlay" onClick={resetForm}>
-                    <div className="dish-form-container modal-card animate-in fade-in zoom-in duration-300" onClick={e => e.stopPropagation()}>
+                    <div className="dish-form-container modal-card" onClick={e => e.stopPropagation()}>
                         <div className="modal-header">
                             <h2 className="modal-title">{editingId ? 'Edit Dish' : 'Add New Dish'}</h2>
                             <button className="close-modal-btn" onClick={resetForm}>

@@ -86,6 +86,19 @@
     position: relative;
     scrollbar-width: none;
     /* Firefox */
+    animation: modalZoomIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes modalZoomIn {
+    from {
+        opacity: 0;
+        transform: scale(0.9) translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
 }
 
 .dish-form-container::-webkit-scrollbar {
@@ -130,6 +143,55 @@
     transform: rotate(90deg);
 }
 
+/* Mobile Specific Modal Tweaks */
+@media (max-width: 640px) {
+    .modal-overlay {
+        align-items: flex-end;
+        padding: 0;
+        background-color: rgba(0, 0, 0, 0.6);
+    }
+
+    .dish-form-container {
+        border-radius: 2.5rem 2.5rem 0 0;
+        padding: 2rem 1.5rem;
+        max-height: 92vh;
+        border-bottom: none;
+        animation: modalSlideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .modal-header {
+        margin-bottom: 1.5rem;
+    }
+
+    .form-actions-bar {
+        flex-direction: column-reverse;
+        gap: 1.5rem;
+        align-items: stretch;
+    }
+
+    .dietary-container {
+        justify-content: center;
+    }
+
+    .save-btn {
+        width: 100%;
+        justify-content: center;
+        padding: 1.25rem;
+    }
+}
+
+@keyframes modalSlideUp {
+    from {
+        transform: translateY(100%);
+        opacity: 0.5;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
 .form-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -168,6 +230,13 @@
     appearance: none;
     -webkit-appearance: none;
     -moz-appearance: none;
+    outline: none;
+}
+
+.form-group input:focus {
+    border-color: #000;
+    background-color: #fff;
+    box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.05);
 }
 
 .price-input-wrapper {
@@ -656,7 +725,7 @@
 
 .menu-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(300px, 2fr));
     gap: 1.5rem;
 }
 

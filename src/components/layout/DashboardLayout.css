@@ -40,7 +40,8 @@
     padding: 0 1.5rem;
     align-items: center;
     justify-content: space-between;
-    z-index: 60;
+    z-index: 100;
+    /* Ensure it's always on top */
 }
 
 .mobile-logo {
@@ -90,7 +91,8 @@
 
     .main-content {
         margin-left: 0;
-        padding-top: 5rem;
+        padding-top: 64px;
+        /* Match header height */
     }
 
     .mobile-header {
@@ -101,7 +103,8 @@
 @media (max-width: 640px) {
     .main-content {
         padding: 1rem;
-        padding-top: 5rem;
+        padding-top: 56px;
+        /* Match mobile header height */
     }
 
     .mobile-header {
