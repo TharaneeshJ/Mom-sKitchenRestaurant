@@ -1,17 +1,19 @@
 
 import React from 'react';
 import { useRestaurant } from '../../context/RestaurantContext';
-import { Maximize2, Minimize2 } from 'lucide-react';
+import { Maximize2, Minimize2, ChefHat, CheckCircle2, Utensils, CircleDollarSign } from 'lucide-react';
 import './KitchenDashboard.css';
 
 export const KitchenDashboard: React.FC = () => {
     const { orders, updateOrderStatus: updateStatus } = useRestaurant();
     const [isFullscreen, setIsFullscreen] = React.useState(false);
+    const [updatingOrder, setUpdatingOrder] = React.useState<string | null>(null);
     const dashboardRef = React.useRef<HTMLDivElement>(null);
 
     const toggleFullscreen = () => {
+        if (!dashboardRef.current) return;
         if (!document.fullscreenElement) {
-            dashboardRef.current?.requestFullscreen();
+            dashboardRef.current.requestFullscreen();
             setIsFullscreen(true);
         } else {
             document.exitFullscreen();
@@ -27,23 +29,29 @@ export const KitchenDashboard: React.FC = () => {
         return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
     }, []);
 
-    // Wrap updateOrderStatus to prevent double state updates if using optimistic UI
+    // Wrap updateOrderStatus with loading state
     const updateOrderStatus = async (id: string, status: any) => {
-        await updateStatus(id, status);
+        setUpdatingOrder(id);
+        try {
+            await updateStatus(id, status);
+        } finally {
+            setUpdatingOrder(null);
+        }
     };
 
-    // Filter for active orders (pending, cooking, ready, served)
+    // Filter for active orders (pending, cooking, ready, served) - ensure case-insensitive match
     const activeOrders = orders.filter(
-        (order) => ['pending', 'cooking', 'ready', 'served'].includes(order.status)
+        (order) => {
+            const status = order.status?.toLowerCase();
+            return ['pending', 'cooking', 'ready', 'served'].includes(status);
+        }
     ).sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
 
-
-
     const columns = [
-        { status: 'pending', label: 'Pending', count: activeOrders.filter(o => o.status === 'pending').length },
-        { status: 'cooking', label: 'Cooking', count: activeOrders.filter(o => o.status === 'cooking').length },
-        { status: 'ready', label: 'Ready', count: activeOrders.filter(o => o.status === 'ready').length },
-        { status: 'served', label: 'Served', count: activeOrders.filter(o => o.status === 'served').length },
+        { status: 'pending', label: 'Pending', count: activeOrders.filter(o => o.status?.toLowerCase() === 'pending').length },
+        { status: 'cooking', label: 'Cooking', count: activeOrders.filter(o => o.status?.toLowerCase() === 'cooking').length },
+        { status: 'ready', label: 'Ready', count: activeOrders.filter(o => o.status?.toLowerCase() === 'ready').length },
+        { status: 'served', label: 'Served', count: activeOrders.filter(o => o.status?.toLowerCase() === 'served').length },
     ];
 
     return (
@@ -69,18 +77,36 @@ export const KitchenDashboard: React.FC = () => {
                         </div>
                         <div className="column-content">
                             {activeOrders
-                                .filter((order) => order.status === col.status)
+                                .filter((order) => {
+                                    const os = order.status?.toLowerCase();
+                                    return os === col.status;
+                                })
                                 .map((order) => (
-                                    <div key={order.id} className="order-card">
+                                    <div key={order.id} className={`order-card ${updatingOrder === order.id ? 'updating' : ''}`}>
                                         <div className="order-header">
-                                            <div>
-                                                <div className="table-number">Table {order.tableId}</div>
-                                                <div className="customer-name">{order.customerName || 'Guest'}</div>
-                                                <div className="order-time">
-                                                    {new Date(order.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                            <div className="flex items-center justify-between w-full">
+                                                <div>
+                                                    <div className="table-number flex items-center gap-2">
+                                                        Table {order.tableId}
+                                                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${order.paymentStatus === 'PAID' ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'
+                                                            }`}>
+                                                            {order.paymentStatus || 'PENDING'}
+                                                        </span>
+                                                    </div>
+                                                    <div className="customer-name">{order.customerName || 'Guest'}</div>
+                                                    <div className="order-time">
+                                                        {new Date(order.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                    </div>
+                                                </div>
+                                                <div className="flex flex-col items-end gap-1">
+                                                    <div className="payment-method text-[10px] font-bold text-gray-400 uppercase">
+                                                        {order.paymentMethod}
+                                                    </div>
+                                                    <div className="text-[9px] font-black px-1.5 py-0.5 bg-gray-100 text-gray-500 rounded uppercase">
+                                                        {order.status}
+                                                    </div>
                                                 </div>
                                             </div>
-                                            {/* Status Badge is redundant in columns, but kept for clarity if needed, or removed */}
                                         </div>
 
                                         <div className="order-items">
@@ -93,42 +119,55 @@ export const KitchenDashboard: React.FC = () => {
                                         </div>
 
                                         <div className="order-actions">
-                                            {order.status === 'pending' && (
-                                                <button
-                                                    className="btn btn-primary"
-                                                    onClick={() => updateOrderStatus(order.id, 'cooking')}
-                                                >
-                                                    Start Cooking
-                                                </button>
-                                            )}
-                                            {order.status === 'cooking' && (
-                                                <button
-                                                    className="btn btn-success"
-                                                    onClick={() => updateOrderStatus(order.id, 'ready')}
-                                                >
-                                                    Mark Ready
-                                                </button>
-                                            )}
-                                            {order.status === 'ready' && (
-                                                <button
-                                                    className="btn btn-primary"
-                                                    onClick={() => updateOrderStatus(order.id, 'served')}
-                                                >
-                                                    Mark Served
-                                                </button>
-                                            )}
-                                            {order.status === 'served' && (
-                                                <button
-                                                    className="btn btn-success"
-                                                    onClick={() => updateOrderStatus(order.id, 'paid')}
-                                                >
-                                                    Mark Paid
-                                                </button>
+                                            {updatingOrder === order.id ? (
+                                                <div className="w-full flex flex-col items-center justify-center py-4 gap-2">
+                                                    <div className="w-6 h-6 border-2 border-gray-200 border-t-black rounded-full animate-spin"></div>
+                                                    <span className="text-[9px] font-black uppercase text-gray-400 animate-pulse">Updating...</span>
+                                                </div>
+                                            ) : (
+                                                <div className="w-full space-y-2">
+                                                    {order.status?.toLowerCase() === 'pending' && (
+                                                        <button
+                                                            className="btn btn-primary"
+                                                            onClick={() => updateOrderStatus(order.id, 'cooking')}
+                                                        >
+                                                            <ChefHat size={16} />
+                                                            Start Cooking
+                                                        </button>
+                                                    )}
+                                                    {order.status?.toLowerCase() === 'cooking' && (
+                                                        <button
+                                                            className="btn btn-primary"
+                                                            onClick={() => updateOrderStatus(order.id, 'ready')}
+                                                        >
+                                                            <CheckCircle2 size={16} />
+                                                            Mark Ready
+                                                        </button>
+                                                    )}
+                                                    {order.status?.toLowerCase() === 'ready' && (
+                                                        <button
+                                                            className="btn btn-primary"
+                                                            onClick={() => updateOrderStatus(order.id, 'served')}
+                                                        >
+                                                            <Utensils size={16} />
+                                                            Mark Served
+                                                        </button>
+                                                    )}
+                                                    {order.status?.toLowerCase() === 'served' && (
+                                                        <button
+                                                            className="btn btn-primary"
+                                                            onClick={() => updateOrderStatus(order.id, 'paid')}
+                                                        >
+                                                            <CircleDollarSign size={16} />
+                                                            Mark Paid
+                                                        </button>
+                                                    )}
+                                                </div>
                                             )}
                                         </div>
                                     </div>
                                 ))}
-                            {activeOrders.filter((order) => order.status === col.status).length === 0 && (
+                            {activeOrders.filter((order) => order.status?.toLowerCase() === col.status).length === 0 && (
                                 <div className="empty-column-state">No orders</div>
                             )}
                         </div>

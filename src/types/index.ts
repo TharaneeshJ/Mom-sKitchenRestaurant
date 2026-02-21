@@ -1,5 +1,6 @@
 
 export type OrderStatus = 'PENDING' | 'COOKING' | 'READY' | 'SERVED' | 'PAID' | 'pending' | 'cooking' | 'ready' | 'served' | 'paid';
+export type PaymentStatus = 'PENDING' | 'PAID' | 'FAILED';
 
 export interface OrderItem {
     id: string; // menu item id
@@ -18,6 +19,7 @@ export interface Order {
     customerName?: string;
     notes?: string;
     paymentMethod?: string;
+    paymentStatus?: PaymentStatus;
 }
 
 export interface MenuItem {
@@ -50,6 +52,7 @@ export interface OrderPayload {
     payment_method: string;
     customer_name: string;
     customer_mobile: string;
+    payment_status?: PaymentStatus;
 }
 
 export interface OrderResponse {
@@ -60,6 +63,8 @@ export interface OrderResponse {
     subtotal: number;
     gst: number;
     total: number;
+    payment_method?: string;
+    payment_status?: PaymentStatus;
 }
 
 export interface KitchenOrder {
@@ -68,5 +73,7 @@ export interface KitchenOrder {
     items: string;
     total: number;
     status: OrderStatus;
+    payment_status: PaymentStatus;
+    payment_method: string;
     created_at: string;
 }

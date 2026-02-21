@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
-import type { Order, OrderStatus, MenuItem } from '../types';
+import type { Order, OrderStatus, PaymentStatus, MenuItem } from '../types';
 import { supabase } from '../api/supabase';
 import { DEFAULT_MENU_ITEMS } from '../config/constants';
 
@@ -7,6 +7,7 @@ interface RestaurantContextType {
     orders: Order[];
     menuItems: MenuItem[];
     updateOrderStatus: (orderId: string, status: OrderStatus) => Promise<void>;
+    updatePaymentStatus: (orderId: string, status: PaymentStatus) => Promise<void>;
     addOrder: (order: Order) => void;
     getOrdersByStatus: (status: OrderStatus[]) => Order[];
     addMenuItem: (item: MenuItem) => Promise<void>;
@@ -46,7 +47,8 @@ export const RestaurantProvider: React.FC<{ children: ReactNode }> = ({ children
                     totalAmount: o.total_amount || 0,
                     timestamp: o.created_at ? new Date(o.created_at) : new Date(),
                     customerName: o.customer_name || 'Guest',
-                    paymentMethod: o.payment_method || 'CASH'
+                    paymentMethod: o.payment_method || 'CASH',
+                    paymentStatus: (o.payment_status || 'PENDING') as PaymentStatus
                 }));
                 setOrders(mappedOrders);
             }
@@ -86,21 +88,17 @@ export const RestaurantProvider: React.FC<{ children: ReactNode }> = ({ children
 
         // Real-time subscriptions - Fixed with schema property
         // Real-time subscriptions - Fixed with schema property
+        // Real-time subscriptions
         const ordersSubscription = supabase
             .channel('orders-channel')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, (payload) => {
-                // Handle different events more granually if needed, but reloading is safest for consistency
-                if (payload.eventType === 'UPDATE') {
-                    setOrders(prev => prev.map(o =>
-                        o.id === payload.new.id ? {
-                            ...o,
-                            status: payload.new.status.toLowerCase() as OrderStatus,
-                            customerName: payload.new.customer_name || 'Guest',
-                            paymentMethod: payload.new.payment_method
-                        } : o
-                    ));
-                } else {
+                console.log('Real-time order update:', payload);
+                if (payload.eventType === 'UPDATE' || payload.eventType === 'INSERT') {
+                    // For updates, we can update the specific order or just reload
+                    // Reloading is safer because it brings in joined order_items
                     loadOrders();
+                } else if (payload.eventType === 'DELETE') {
+                    setOrders(prev => prev.filter(o => o.id !== payload.old.id));
                 }
             })
             .subscribe();
@@ -113,7 +111,7 @@ export const RestaurantProvider: React.FC<{ children: ReactNode }> = ({ children
         // Polling fallback to ensure data consistency
         const intervalId = setInterval(() => {
             loadOrders();
-        }, 5000); // Poll every 5 seconds
+        }, 10000); // Poll every 10 seconds (slightly less frequent to avoid race conditions)
 
         return () => {
             supabase.removeChannel(ordersSubscription);
@@ -124,24 +122,49 @@ export const RestaurantProvider: React.FC<{ children: ReactNode }> = ({ children
 
     const updateOrderStatus = async (orderId: string, status: OrderStatus) => {
         try {
+            // Normalize status to lowercase for our internal state
+            const targetStatus = status.toLowerCase() as OrderStatus;
+
             // Optimistic update
             setOrders(prev => prev.map(o =>
-                o.id === orderId ? { ...o, status } : o
+                o.id === orderId ? { ...o, status: targetStatus } : o
             ));
 
+            // In database, we use UPPERCASE by convention for enums
             const { error } = await supabase
                 .from('orders')
                 .update({ status: status.toUpperCase() })
                 .eq('id', orderId);
 
             if (error) {
-                // Revert on error
                 console.error("Failed to update status in Supabase", error);
-                await loadOrders(); // Re-fetch to true state
+                await loadOrders(); // Re-fetch to true state on error
                 throw error;
             }
         } catch (e) {
             console.error("Failed to update status in Supabase", e);
+            // Even if the DB update fails, the loadOrders() in the if(error) block 
+            // will eventually fix the UI state.
+        }
+    };
+    const updatePaymentStatus = async (orderId: string, status: PaymentStatus) => {
+        try {
+            setOrders(prev => prev.map(o =>
+                o.id === orderId ? { ...o, paymentStatus: status } : o
+            ));
+
+            const { error } = await supabase
+                .from('orders')
+                .update({ payment_status: status.toUpperCase() })
+                .eq('id', orderId);
+
+            if (error) {
+                console.error("Failed to update payment status in Supabase", error);
+                await loadOrders();
+                throw error;
+            }
+        } catch (e) {
+            console.error("Failed to update payment status in Supabase", e);
         }
     };
 
@@ -232,6 +255,7 @@ export const RestaurantProvider: React.FC<{ children: ReactNode }> = ({ children
             orders,
             menuItems,
             updateOrderStatus,
+            updatePaymentStatus,
             addOrder,
             getOrdersByStatus,
             addMenuItem,

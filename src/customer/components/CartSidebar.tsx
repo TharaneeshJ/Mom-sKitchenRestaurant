@@ -1,7 +1,7 @@
 import React from 'react';
 import type { OrderItemPayload } from '../../types';
-import { Button } from './Button';
 import { TableSelector } from './TableSelector';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface CartSidebarProps {
     items: OrderItemPayload[];
@@ -43,199 +43,171 @@ export const CartSidebar: React.FC<CartSidebarProps> = ({
     const finalTotal = totalPrice; // Assuming price includes GST for display simplicity
 
     return (
-        <div className={`bg-white rounded-3xl shadow-card border border-brand-border/40 overflow-hidden flex flex-col h-fit max-h-[calc(100vh-100px)] ${className}`}>
-            <div className="p-4 md:p-5 border-b border-brand-border/20 flex justify-between items-center sticky top-0 z-10 bg-white/95 backdrop-blur-md">
+        <div className={`bg-white rounded-[2.5rem] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.1)] border border-gray-100/50 overflow-hidden flex flex-col h-fit ${className}`}>
+            {/* Header */}
+            <div className="p-5 md:p-6 border-b border-gray-50 flex justify-between items-center bg-white">
                 <div>
-                    <h2 className="text-xl font-bold font-serif text-brand-text tracking-tight">My Cart</h2>
-                    <div className="flex items-center gap-1.5 mt-0.5">
-                        <p className="text-[11px] font-bold text-brand-muted uppercase tracking-wider">
-                            {items.length} {items.length === 1 ? 'Item' : 'Items'} selected
-                        </p>
-                    </div>
+                    <h2 className="text-2xl font-serif font-black text-gray-900 tracking-tight">My Cart</h2>
+                    <p className="text-[10px] font-black text-brand-primary uppercase tracking-[0.3em] mt-1">
+                        {items.length} {items.length === 1 ? 'Item' : 'Items'} Selected
+                    </p>
                 </div>
-                <div className="flex items-center gap-2">
-                    {onClose && (
-                        <button
-                            onClick={onClose}
-                            className="lg:hidden p-2 bg-white rounded-full text-brand-muted hover:text-brand-text shadow-sm border border-brand-border hover:bg-gray-50 transition-colors"
-                            aria-label="Close cart"
-                        >
-                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                        </button>
-                    )}
-                </div>
+                {onClose && (
+                    <motion.button
+                        whileHover={{ rotate: 90, scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        onClick={onClose}
+                        className="p-3 bg-gray-50 rounded-full text-gray-400 hover:text-gray-900 transition-colors"
+                    >
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </motion.button>
+                )}
             </div>
 
-            <div className="p-3 md:p-4 flex-1 overflow-y-auto custom-scrollbar">
-                {items.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-12 text-brand-muted/40">
-                        <div className="w-16 h-16 bg-brand-background rounded-full flex items-center justify-center mb-4 opacity-30">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-brand-muted">
-                                <circle cx="9" cy="21" r="1"></circle>
-                                <circle cx="20" cy="21" r="1"></circle>
-                                <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
-                            </svg>
+            <div className="p-5 md:p-6 flex-1 space-y-8">
+                {/* Cart Items */}
+                <div>
+                    {items.length === 0 ? (
+                        <div className="py-20 text-center">
+                            <div className="w-16 h-16 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4 opacity-50">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400">
+                                    <circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle>
+                                    <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+                                </svg>
+                            </div>
+                            <p className="text-xs font-black text-gray-400 uppercase tracking-widest">Cart is Empty</p>
                         </div>
-                        <p className="font-bold text-sm text-brand-text/60">Cart is Empty</p>
-                        <p className="text-[11px] mt-1 text-center max-w-[140px]">Browse our menu and add your favorite dishes.</p>
-                    </div>
-                ) : (
-                    <div className="space-y-4 mb-8">
-                        {items.map((item, idx) => (
-                            <div key={`${item.name}-${idx}`} className="flex items-center gap-4 group">
-                                <div className="w-14 h-14 rounded-2xl bg-brand-background flex items-center justify-center text-2xl shrink-0 shadow-sm border border-brand-border/30 group-hover:scale-105 transition-all duration-300 overflow-hidden">
-                                    {item.image ? (
-                                        <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
-                                    ) : (
-                                        <div className="w-full h-full flex items-center justify-center bg-brand-background">
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-brand-muted/40">
-                                                <path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"></path>
-                                                <path d="M7 2v20"></path>
-                                                <path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"></path>
-                                            </svg>
+                    ) : (
+                        <div className="space-y-6">
+                            <AnimatePresence>
+                                {items.map((item, idx) => (
+                                    <motion.div
+                                        key={`${item.name}-${idx}`}
+                                        initial={{ opacity: 0, x: -10 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        exit={{ opacity: 0, scale: 0.95 }}
+                                        className="flex items-center gap-5 group py-2"
+                                    >
+                                        <div className="w-16 h-16 rounded-2xl bg-gray-50 flex items-center justify-center shrink-0 shadow-sm overflow-hidden group-hover:scale-105 transition-transform duration-500">
+                                            {item.image ? (
+                                                <img src={item.image} alt={item.name} className="w-full h-full object-cover" />
+                                            ) : (
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-gray-300">
+                                                    <path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"></path>
+                                                    <path d="M7 2v20"></path>
+                                                    <path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"></path>
+                                                </svg>
+                                            )}
                                         </div>
-                                    )}
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex justify-between items-start mb-2">
+                                                <h4 className="font-black text-gray-900 text-sm tracking-tight line-clamp-1">{item.name}</h4>
+                                                <span className="font-black text-brand-primary text-[15px] font-serif tracking-tight ml-4">₹{item.price * item.qty}</span>
+                                            </div>
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-[10px] font-black text-gray-300 uppercase tracking-[0.2em] font-serif">₹{item.price}</span>
+                                                <div className="flex items-center bg-gray-50 rounded-lg p-0.5 border border-gray-100 gap-3">
+                                                    <button onClick={() => onDecrement(item.name)} className="w-6 h-6 flex items-center justify-center rounded-md text-gray-400 hover:text-red-500 transition-colors"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><line x1="5" y1="12" x2="19" y2="12" /></svg></button>
+                                                    <span className="text-[10px] font-black text-gray-900 min-w-[12px] text-center">{item.qty}</span>
+                                                    <button onClick={() => onIncrement(item.name)} className="w-6 h-6 flex items-center justify-center rounded-md text-gray-400 hover:text-brand-primary transition-colors"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg></button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </motion.div>
+                                ))}
+                            </AnimatePresence>
+                        </div>
+                    )}
+                </div>
+
+                {/* Details Sections */}
+                <div className="space-y-8">
+                    <div className="space-y-4">
+                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em]">Dining Info</p>
+                        <div className="bg-gray-50/50 p-5 rounded-[1.5rem] border border-gray-100 space-y-5">
+                            <div>
+                                <label className="block text-[9px] font-black text-gray-300 uppercase tracking-widest mb-3">Dining Table</label>
+                                <TableSelector selectedTable={table} onSelect={onTableChange} />
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-[9px] font-black text-gray-300 uppercase tracking-widest mb-2">Your Name</label>
+                                    <input
+                                        type="text"
+                                        placeholder="Name"
+                                        value={customerName}
+                                        onChange={(e) => onNameChange(e.target.value)}
+                                        className="w-full bg-white border border-gray-100 rounded-xl py-2.5 px-4 text-xs font-bold text-gray-900 outline-none focus:border-brand-primary transition-all placeholder:text-gray-200 shadow-sm"
+                                    />
                                 </div>
-                                <div className="flex-1 min-w-0">
-                                    <div className="flex justify-between items-baseline">
-                                        <p className="font-bold text-brand-text text-[14px] line-clamp-1 leading-snug">{item.name}</p>
-                                        <p className="font-serif font-black text-brand-primary text-[14px] whitespace-nowrap ml-3">₹{item.price * item.qty}</p>
-                                    </div>
-
-                                    <div className="flex items-center justify-between">
-                                        <p className="text-xs font-black text-brand-muted/70 uppercase tracking-tight">₹{item.price}</p>
-
-                                        {/* Quantity Controls */}
-                                        <div className="flex items-center bg-white p-1 rounded-xl border border-brand-border/60 shadow-sm gap-3">
-                                            <button
-                                                onClick={() => onDecrement(item.name)}
-                                                className="w-7 h-7 flex items-center justify-center rounded-lg text-brand-muted hover:text-red-500 hover:bg-red-50 transition-all active:scale-90"
-                                            >
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                                                    <line x1="5" y1="12" x2="19" y2="12"></line>
-                                                </svg>
-                                            </button>
-                                            <span className="text-xs font-bold text-brand-text min-w-[12px] text-center">{item.qty}</span>
-                                            <button
-                                                onClick={() => onIncrement(item.name)}
-                                                className="w-7 h-7 flex items-center justify-center rounded-lg text-brand-muted hover:text-brand-primary hover:bg-brand-primary/10 transition-all active:scale-90"
-                                            >
-                                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                                                    <line x1="12" y1="5" x2="12" y2="19"></line>
-                                                    <line x1="5" y1="12" x2="19" y2="12"></line>
-                                                </svg>
-                                            </button>
-                                        </div>
-                                    </div>
+                                <div>
+                                    <label className="block text-[9px] font-black text-gray-300 uppercase tracking-widest mb-2">Mobile</label>
+                                    <input
+                                        type="tel"
+                                        placeholder="Number"
+                                        value={customerMobile}
+                                        onChange={(e) => onMobileChange(e.target.value)}
+                                        className="w-full bg-white border border-gray-100 rounded-xl py-2.5 px-4 text-xs font-bold text-gray-900 outline-none focus:border-brand-primary transition-all placeholder:text-gray-200 shadow-sm"
+                                    />
                                 </div>
                             </div>
-                        ))}
-                    </div>
-                )}
-
-                {/* Customer Details Section */}
-                <div className="mb-8 overflow-hidden rounded-2xl border border-brand-border/40 bg-brand-background/30 p-4 space-y-5">
-                    <div className="flex items-center gap-2 mb-1">
-                        <div className="w-1 h-4 bg-brand-primary rounded-full"></div>
-                        <h3 className="text-[10px] font-black text-brand-text uppercase tracking-[0.2em]">Order Details</h3>
+                        </div>
                     </div>
 
-                    <div>
-                        <label className="block text-[10px] font-bold text-brand-muted uppercase mb-2 tracking-wider ml-1">Dining Table</label>
-                        <TableSelector selectedTable={table} onSelect={onTableChange} />
-                        {!table && (
-                            <p className="text-[10px] text-orange-600 mt-2 flex items-center gap-1.5 font-medium italic translate-x-1">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                Selection Required
-                            </p>
+                    <div className="space-y-4">
+                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em]">Payment Mode</p>
+                        <div className="grid grid-cols-2 gap-3 p-1 bg-gray-50 rounded-[1.5rem] border border-gray-100">
+                            <button
+                                onClick={() => onPaymentMethodChange('cash')}
+                                className={`flex items-center justify-center gap-2 py-3 rounded-2xl transition-all duration-300 ${paymentMethod === 'cash'
+                                    ? 'bg-white text-gray-900 shadow-md shadow-black/5 ring-1 ring-black/5'
+                                    : 'text-gray-400 hover:text-gray-600'
+                                    }`}
+                            >
+                                <span className="text-[11px] font-black uppercase tracking-widest">Cash</span>
+                            </button>
+                            <button
+                                onClick={() => onPaymentMethodChange('upi')}
+                                className={`flex items-center justify-center gap-2 py-3 rounded-2xl transition-all duration-300 ${paymentMethod === 'upi'
+                                    ? 'bg-white text-brand-primary shadow-md shadow-brand-primary/10 ring-1 ring-brand-primary/5'
+                                    : 'text-gray-400 hover:text-gray-600'
+                                    }`}
+                            >
+                                <span className="text-[11px] font-black uppercase tracking-widest">UPI Pay</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Grand Total */}
+                <div className="pt-5 border-t border-gray-50">
+                    <div className="flex justify-between items-center mb-6">
+                        <div>
+                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.3em]">Grand Total</p>
+                            <p className="text-[9px] text-gray-300 font-bold uppercase tracking-widest mt-1">Inclusive of GST</p>
+                        </div>
+                        <span className="text-[42px] font-black text-brand-primary font-serif tracking-tighter leading-none">₹{finalTotal}</span>
+                    </div>
+
+                    <motion.button
+                        whileHover={{ scale: 1.01 }}
+                        whileTap={{ scale: 0.99 }}
+                        onClick={onPlaceOrder}
+                        disabled={isOrdering || items.length === 0 || !table || !customerName || !customerMobile}
+                        className="w-full bg-black text-white font-black py-4 rounded-[1.25rem] shadow-[0_20px_40px_-12px_rgba(0,0,0,0.2)] hover:bg-brand-primary transition-all uppercase tracking-[0.25em] text-[10px] disabled:opacity-30 disabled:grayscale flex items-center justify-center gap-3 group"
+                    >
+                        {isOrdering ? (
+                            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                        ) : (
+                            <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+                            </svg>
                         )}
-                    </div>
-
-                    <div className="grid grid-cols-1 gap-4">
-                        <div>
-                            <label className="block text-[10px] font-bold text-brand-muted uppercase mb-2 tracking-wider ml-1">Customer Name</label>
-                            <input
-                                type="text"
-                                placeholder="Ex. Tharaneesh"
-                                value={customerName}
-                                onChange={(e) => onNameChange(e.target.value)}
-                                className="w-full bg-white border border-brand-border/60 rounded-xl py-2.5 px-4 text-sm focus:ring-1 focus:ring-black focus:border-black outline-none transition-all placeholder:text-gray-300 shadow-sm"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-[10px] font-bold text-brand-muted uppercase mb-2 tracking-wider ml-1">Mobile Number</label>
-                            <input
-                                type="tel"
-                                placeholder="Ex. 9876543210"
-                                value={customerMobile}
-                                onChange={(e) => onMobileChange(e.target.value)}
-                                className="w-full bg-white border border-brand-border/60 rounded-xl py-2.5 px-4 text-sm focus:ring-1 focus:ring-black focus:border-black outline-none transition-all placeholder:text-gray-300 shadow-sm"
-                            />
-                        </div>
-                    </div>
+                        {isOrdering ? 'Placing Order...' : 'Confirm Order'}
+                    </motion.button>
                 </div>
-
-                {/* Payment Method Selection */}
-                <div className="mb-6">
-                    <label className="block text-xs font-bold text-brand-muted uppercase mb-3 tracking-wider">Payment Method</label>
-                    <div className="grid grid-cols-2 gap-3">
-                        <button
-                            onClick={() => onPaymentMethodChange('cash')}
-                            className={`flex items-center justify-center gap-2 py-3 rounded-xl border transition-all duration-200 ${paymentMethod === 'cash'
-                                ? 'bg-brand-primary/10 border-brand-primary text-brand-primary ring-1 ring-brand-primary shadow-sm'
-                                : 'bg-white border-brand-border text-brand-muted hover:bg-brand-background hover:border-brand-primary/30'
-                                }`}
-                        >
-                            <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <rect x="2" y="6" width="20" height="12" rx="2" />
-                                <circle cx="12" cy="12" r="2" />
-                                <path d="M6 12h.01M18 12h.01" />
-                            </svg>
-                            <span className="text-sm font-bold">Cash</span>
-                        </button>
-                        <button
-                            onClick={() => onPaymentMethodChange('upi')}
-                            className={`flex items-center justify-center gap-2 py-3 rounded-xl border transition-all duration-200 ${paymentMethod === 'upi'
-                                ? 'bg-brand-primary/10 border-brand-primary text-brand-primary ring-1 ring-brand-primary shadow-sm'
-                                : 'bg-white border-brand-border text-brand-muted hover:bg-brand-background hover:border-brand-primary/30'
-                                }`}
-                        >
-                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M3 21L9 3L15 13L3 21Z" />
-                                <path d="M9 21L15 3L21 13L9 21Z" />
-                            </svg>
-                            <span className="text-sm font-bold">UPI</span>
-                        </button>
-                    </div>
-                </div>
-
-                {/* Bill Summary Section - Minimal */}
-                <div className="mb-8 p-5 bg-brand-background/30 rounded-2xl border border-brand-border/20 flex justify-between items-center">
-                    <div className="flex flex-col gap-1">
-                        <span className="text-[10px] font-black text-brand-muted uppercase tracking-[0.2em]">Total Amount</span>
-                        <span className="text-[10px] font-medium text-brand-muted/70">Inclusive of all taxes</span>
-                    </div>
-                    <span className="text-3xl font-black text-brand-primary font-mono tracking-tighter">₹{finalTotal}</span>
-                </div>
-
-                <Button
-                    onClick={onPlaceOrder}
-                    disabled={isOrdering || items.length === 0 || !table || !customerName || !customerMobile}
-                    className="w-full py-3.5 text-base shadow-lg shadow-brand-primary/20 hover:shadow-brand-primary/40 transition-all rounded-xl"
-                    size="lg"
-                >
-                    {isOrdering ? (
-                        <span className="flex items-center gap-2">
-                            <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                            Processing...
-                        </span>
-                    ) : 'Place Order'}
-                </Button>
             </div>
         </div>
     );

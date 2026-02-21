@@ -324,8 +324,7 @@
 .modal-footer {
     background-color: hsl(var(--muted));
     padding: 1.5rem;
-    border-top: 1px solid hsl(var(--border));
-    border-radius: 0 0 12px 12px;
+    border-radius: 12px 12px 12px 12px;
 }
 
 /* Utilities for Modal */

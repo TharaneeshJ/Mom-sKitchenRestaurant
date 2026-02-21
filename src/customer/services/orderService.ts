@@ -1,4 +1,4 @@
-import type { OrderPayload, OrderResponse, KitchenOrder, OrderStatus } from '../../types';
+import type { OrderPayload, OrderResponse, KitchenOrder, OrderStatus, PaymentStatus } from '../../types';
 import { supabase } from '../../api/supabase';
 
 /**
@@ -19,6 +19,7 @@ export const submitOrder = async (payload: OrderPayload): Promise<OrderResponse>
                 table_id: payload.table,
                 status: 'PENDING',
                 payment_method: payload.payment_method.toUpperCase(),
+                payment_status: payload.payment_status || 'PENDING',
                 total_amount: total,
                 customer_name: payload.customer_name,
                 customer_mobile: payload.customer_mobile
@@ -50,6 +51,8 @@ export const submitOrder = async (payload: OrderPayload): Promise<OrderResponse>
             subtotal,
             gst,
             total,
+            payment_method: payload.payment_method,
+            payment_status: (payload.payment_status || 'PENDING') as PaymentStatus,
         };
     } catch (e) {
         console.error('Supabase order submission failed', e);
@@ -75,6 +78,8 @@ export const getKitchenOrders = async (): Promise<KitchenOrder[]> => {
             items: o.order_items.map((i: any) => `${i.item_name} x${i.quantity}`).join(', '),
             total: o.total_amount,
             status: o.status as OrderStatus,
+            payment_status: o.payment_status || 'PENDING',
+            payment_method: o.payment_method || 'CASH',
             created_at: o.created_at
         }));
     } catch (e) {
@@ -115,5 +120,47 @@ export const parseKitchenItems = (itemsString: string): { name: string; qty: num
         });
     } catch {
         return [{ name: itemsString, qty: 1 }];
+    }
+};
+/**
+ * Update Payment Status
+ */
+export const updatePaymentStatus = async (orderId: string, newStatus: PaymentStatus): Promise<boolean> => {
+    try {
+        const { error } = await supabase
+            .from('orders')
+            .update({ payment_status: newStatus.toUpperCase() })
+            .eq('id', orderId);
+
+        if (error) throw error;
+        return true;
+    } catch (e) {
+        console.error('Supabase update payment failed', e);
+        return false;
+    }
+};
+
+/**
+ * Cancel Order (Delete from DB)
+ */
+export const cancelOrder = async (orderId: string): Promise<boolean> => {
+    try {
+        // First delete order items
+        await supabase
+            .from('order_items')
+            .delete()
+            .eq('order_id', orderId);
+
+        // Then delete the order
+        const { error } = await supabase
+            .from('orders')
+            .delete()
+            .eq('id', orderId);
+
+        if (error) throw error;
+        return true;
+    } catch (e) {
+        console.error('Supabase delete order failed', e);
+        return false;
     }
 };
