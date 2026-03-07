@@ -6,6 +6,7 @@ import { DashboardLayout } from './components/layout/DashboardLayout';
 import { KitchenDashboard } from './pages/Kitchen/KitchenDashboard';
 import { BillingDashboard } from './pages/Billing/BillingDashboard';
 import { Settings } from './pages/Settings/Settings';
+import { SalesAnalysis } from './pages/SalesAnalysis/SalesAnalysis';
 import { CustomerPortal } from './customer/CustomerPortal';
 import './assets/styles/App.css';
 
@@ -64,6 +65,14 @@ const AppRoutes = () => {
         element={
           <DashboardLayout>
             <Settings />
+          </DashboardLayout>
+        }
+      />
+      <Route
+        path="/sales"
+        element={
+          <DashboardLayout>
+            <SalesAnalysis />
           </DashboardLayout>
         }
       />

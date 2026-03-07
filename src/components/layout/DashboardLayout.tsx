@@ -1,6 +1,6 @@
 import React, { type ReactNode, useState } from 'react';
 import { NavLink } from 'react-router-dom';
-import { Receipt, Settings, ChefHat, Menu, X } from 'lucide-react';
+import { Receipt, Settings, ChefHat, Menu, X, TrendingUp } from 'lucide-react';
 import { RESTAURANT_SETTINGS } from '../../config/constants';
 import './DashboardLayout.css';
 
@@ -75,6 +75,17 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({ children }) =>
                     >
                         <Receipt size={18} />
                         Billing & Orders
+                    </NavLink>
+
+                    <NavLink
+                        to="/sales"
+                        onClick={closeSidebar}
+                        className={({ isActive }) =>
+                            `nav-link ${isActive ? 'active' : ''}`
+                        }
+                    >
+                        <TrendingUp size={18} />
+                        Sales Analysis
                     </NavLink>
 
                     <div className="nav-divider">

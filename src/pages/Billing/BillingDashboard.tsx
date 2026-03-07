@@ -51,9 +51,14 @@ export const BillingDashboard: React.FC = () => {
 
         if (filterStatus !== 'all') {
             if (filterStatus === 'paid') {
-                result = result.filter(order => (order.status || '').toLowerCase() === 'paid');
+                // ✅ Use paymentStatus (from Supabase payment_status), NOT order.status
+                result = result.filter(order =>
+                    (order.paymentStatus || '').toUpperCase() === 'PAID'
+                );
             } else {
-                result = result.filter(order => (order.status || '').toLowerCase() !== 'paid');
+                result = result.filter(order =>
+                    (order.paymentStatus || '').toUpperCase() !== 'PAID'
+                );
             }
         }
         return result;
@@ -183,30 +188,28 @@ export const BillingDashboard: React.FC = () => {
                                                     {order.items.length} items
                                                 </div>
                                             </td>
+                                            {/* Kitchen status — uses order.status (PENDING/COOKING/READY/SERVED) */}
                                             <td>
-                                                <span className={`status-badge status-${(order.status || '').toLowerCase() === 'paid' ? 'served' : (order.status || '').toLowerCase()}`}>
-                                                    {/* If paid, it means it's completed/served. Otherwise show current status */}
-                                                    {(order.status || '').toLowerCase() === 'paid' ? 'Served' : order.status}
+                                                <span className={`status-badge status-${(order.status || 'pending').toLowerCase()}`}>
+                                                    {(order.status || 'Pending').charAt(0).toUpperCase() + (order.status || 'Pending').slice(1).toLowerCase()}
                                                 </span>
                                             </td>
+                                            {/* Payment status — uses order.paymentStatus (from Supabase payment_status) */}
                                             <td>
                                                 <div className="payment-details">
-                                                    <span className={`status-badge status-${(order.status || '').toLowerCase() === 'paid' ? 'paid' : 'unpaid'}`}>
-                                                        {(order.status || '').toLowerCase() === 'paid' ? 'Paid' : 'Pending'}
+                                                    <span className={`status-badge status-${
+                                                        (order.paymentStatus || '').toUpperCase() === 'PAID' ? 'paid' : 'unpaid'
+                                                    }`}>
+                                                        {(order.paymentStatus || '').toUpperCase() === 'PAID' ? 'Paid' : 'Pending'}
                                                     </span>
                                                     {order.paymentMethod ? (
-                                                        <span className="payment-via">
-                                                            {order.paymentMethod}
-                                                        </span>
+                                                        <span className="payment-via">{order.paymentMethod}</span>
                                                     ) : (
-                                                        <span className="text-xs text-muted-foreground">
-                                                            -
-                                                        </span>
+                                                        <span className="text-xs text-muted-foreground">-</span>
                                                     )}
                                                 </div>
                                             </td>
-                                            <td className="font-semibold font-mono">₹{order.totalAmount.toLocaleString()}</td>
-
+                                            <td className="font-semibold">₹{order.totalAmount.toLocaleString()}</td>
                                         </tr>
                                     ))}
                                 </React.Fragment>
@@ -271,10 +274,15 @@ export const BillingDashboard: React.FC = () => {
                             <div className="modal-footer">
                                 <div className="flex justify-between items-center w-full">
                                     <div className="text-sm">
-                                        Payment:
-                                        <span className="ml-2 font-semibold">
-                                            {selectedOrder.paymentMethod ? selectedOrder.paymentMethod.toUpperCase() : 'PENDING'}
+                                        Payment Status:
+                                        <span className={`ml-2 font-semibold status-badge status-${
+                                            (selectedOrder.paymentStatus || '').toUpperCase() === 'PAID' ? 'paid' : 'unpaid'
+                                        }`}>
+                                            {(selectedOrder.paymentStatus || 'PENDING').toUpperCase()}
                                         </span>
+                                        {selectedOrder.paymentMethod && (
+                                            <span className="ml-2 text-muted-foreground">via {selectedOrder.paymentMethod}</span>
+                                        )}
                                     </div>
                                     <div className="text-xl font-bold">
                                         Total: ₹{selectedOrder.totalAmount.toLocaleString()}
