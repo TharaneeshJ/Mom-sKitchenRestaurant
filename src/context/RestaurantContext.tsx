@@ -124,27 +124,43 @@ export const RestaurantProvider: React.FC<{ children: ReactNode }> = ({ children
         try {
             // Normalize status to lowercase for our internal state
             const targetStatus = status.toLowerCase() as OrderStatus;
+            const isMarkingPaid = targetStatus === 'paid';
 
-            // Optimistic update
+            // Optimistic update — also sync paymentStatus when marking as PAID
             setOrders(prev => prev.map(o =>
-                o.id === orderId ? { ...o, status: targetStatus } : o
+                o.id === orderId
+                    ? { ...o, status: targetStatus, ...(isMarkingPaid ? { paymentStatus: 'PAID' as PaymentStatus } : {}) }
+                    : o
             ));
 
-            // In database, we use UPPERCASE by convention for enums
-            const { error } = await supabase
+            // 1. Update order status (always)
+            const { error: statusError } = await supabase
                 .from('orders')
                 .update({ status: status.toUpperCase() })
                 .eq('id', orderId);
 
-            if (error) {
-                console.error("Failed to update status in Supabase", error);
-                await loadOrders(); // Re-fetch to true state on error
-                throw error;
+            if (statusError) {
+                console.error("Failed to update order status in Supabase", statusError);
+                await loadOrders();
+                throw statusError;
+            }
+
+            // 2. If marking as paid, also sync payment_status — separate call so it
+            //    can't roll back the status update above if it fails.
+            if (isMarkingPaid) {
+                const { error: payError } = await supabase
+                    .from('orders')
+                    .update({ payment_status: 'PAID' })
+                    .eq('id', orderId);
+
+                if (payError) {
+                    console.error("Failed to update payment_status in Supabase", payError);
+                    // Non-fatal: status is already saved correctly; just reload.
+                    await loadOrders();
+                }
             }
         } catch (e) {
             console.error("Failed to update status in Supabase", e);
-            // Even if the DB update fails, the loadOrders() in the if(error) block 
-            // will eventually fix the UI state.
         }
     };
     const updatePaymentStatus = async (orderId: string, status: PaymentStatus) => {

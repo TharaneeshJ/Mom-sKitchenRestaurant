@@ -115,18 +115,21 @@ function buildChartData(
 ): { label: string; revenue: number; orders: number }[] {
     const now = new Date();
 
-    // Day buckets — 6 × 4h blocks
+    // Day buckets — 24 × 1h blocks
     if (period === 'day' || period === 'custom') {
-        const buckets = Array.from({ length: 6 }, (_, i) => ({
-            label: `${String(i * 4).padStart(2, '0')}:00`,
-            revenue: 0,
-            orders: 0,
-        }));
+        const buckets = Array.from({ length: 24 }, (_, i) => {
+            const h = i % 12 || 12;
+            const ampm = i < 12 ? 'AM' : 'PM';
+            return {
+                label: `${h} ${ampm}`,
+                revenue: 0,
+                orders: 0,
+            };
+        });
         orders.forEach(o => {
             const h = new Date(o.timestamp).getHours();
-            const idx = Math.min(Math.floor(h / 4), 5);
-            buckets[idx].revenue += o.totalAmount;
-            buckets[idx].orders += 1;
+            buckets[h].revenue += o.totalAmount;
+            buckets[h].orders += 1;
         });
         return buckets;
     }
@@ -310,33 +313,49 @@ const BarChartSVG: React.FC<{
     metric: 'revenue' | 'orders';
 }> = ({ data, metric }) => {
     const [hoveredIdx, setHoveredIdx] = React.useState<number | null>(null);
+    const containerRef = useRef<HTMLDivElement>(null);
+    const [containerW, setContainerW] = useState(800); // Default fallback
+
+    useEffect(() => {
+        if (!containerRef.current) return;
+        const observer = new ResizeObserver((entries) => {
+            if (entries[0]) {
+                setContainerW(entries[0].contentRect.width);
+            }
+        });
+        observer.observe(containerRef.current);
+        return () => observer.disconnect();
+    }, []);
 
     const values = data.map(d => (metric === 'revenue' ? d.revenue : d.orders));
-    const maxVal  = Math.max(...values, 1);
+    const maxVal = Math.max(...values, 1);
 
     const magnitude = Math.pow(10, Math.floor(Math.log10(maxVal)));
-    const niceMax   = Math.ceil(maxVal / magnitude) * magnitude || 1;
-    const GRID_N    = 4;
+    const niceMax = Math.ceil(maxVal / magnitude) * magnitude || 1;
+    const GRID_N = 4;
     const gridLevels = Array.from({ length: GRID_N + 1 }, (_, i) => (niceMax / GRID_N) * i);
 
-    const CHART_H  = 220;
+    const CHART_H = 320;
     const PLOT_TOP = 15;
     const PLOT_BTM = 35;
-    const PLOT_H   = CHART_H - PLOT_TOP - PLOT_BTM;
-    const COL_W    = data.length > 0 ? Math.max(48, Math.floor(680 / data.length)) : 60;
-    const BAR_W    = Math.min(24, Math.max(10, Math.floor(COL_W * 0.28)));
-    const SVG_W    = COL_W * data.length;
+    const PLOT_H = CHART_H - PLOT_TOP - PLOT_BTM;
+    const COL_W = data.length > 0 ? containerW / data.length : 60;
+    const BAR_W = Math.min(24, Math.max(8, Math.floor(COL_W * 0.4)));
+    const SVG_W = containerW;
 
-    const orderMax = Math.max(...data.map(d => d.orders), 1);
-    const linePts  = data.map((d, i) => ({
+    const orderMaxReal = Math.max(...data.map(d => d.orders), 1);
+    const orderMag = Math.pow(10, Math.floor(Math.log10(orderMaxReal)));
+    const niceOrderMax = Math.ceil(orderMaxReal / orderMag) * orderMag || 1;
+
+    const linePts = data.map((d, i) => ({
         x: i * COL_W + COL_W / 2,
-        y: PLOT_TOP + PLOT_H - (d.orders / orderMax) * PLOT_H,
+        y: PLOT_TOP + PLOT_H - (d.orders / (metric === 'orders' ? niceMax : niceOrderMax)) * PLOT_H,
     }));
     const pathD = linePts.length > 1
         ? linePts.reduce((acc, pt, i) => {
             if (i === 0) return `M ${pt.x},${pt.y}`;
             const prev = linePts[i - 1];
-            const cx   = (prev.x + pt.x) / 2;
+            const cx = (prev.x + pt.x) / 2;
             return `${acc} C ${cx},${prev.y} ${cx},${pt.y} ${pt.x},${pt.y}`;
         }, '')
         : '';
@@ -344,11 +363,26 @@ const BarChartSVG: React.FC<{
         ? `${pathD} L ${linePts[linePts.length - 1].x},${PLOT_TOP + PLOT_H} L ${linePts[0].x},${PLOT_TOP + PLOT_H} Z`
         : '';
 
+    // Flat, premium colors (Stripe-like)
+    const barGradient = metric === 'revenue'
+        ? { start: '#10b981', end: '#10b981' }
+        : { start: '#3b82f6', end: '#3b82f6' };
+
+    // Blue accent for orders trend
+    const trendColor = '#3b82f6'; // Blue 500
+
+    // Helper for top-rounded bars
+    const getBarPath = (x: number, y: number, w: number, h: number, r: number) => {
+        if (h <= 0) return '';
+        const clampedR = Math.min(r, h);
+        return `M ${x},${y + h} L ${x},${y + clampedR} a ${clampedR},${clampedR} 0 0 1 ${clampedR},-${clampedR} L ${x + w - clampedR},${y} a ${clampedR},${clampedR} 0 0 1 ${clampedR},${clampedR} L ${x + w},${y + h} Z`;
+    };
+
     const fmtY = (v: number) => {
         if (metric === 'orders') return v === 0 ? '0' : String(Math.round(v));
-        if (v === 0)      return '₹0';
-        if (v >= 100000)  return `₹${(v / 100000).toFixed(1)}L`;
-        if (v >= 1000)    return `₹${(v / 1000).toFixed(v % 1000 === 0 ? 0 : 1)}k`;
+        if (v === 0) return '₹0';
+        if (v >= 100000) return `₹${(v / 100000).toFixed(1)}L`;
+        if (v >= 1000) return `₹${(v / 1000).toFixed(v % 1000 === 0 ? 0 : 1)}k`;
         return `₹${Math.round(v)}`;
     };
 
@@ -363,29 +397,30 @@ const BarChartSVG: React.FC<{
                 ))}
             </div>
 
-            <div className="sa-chart-body">
+            <div className="sa-chart-body" ref={containerRef}>
                 <svg
                     viewBox={`0 0 ${SVG_W} ${CHART_H}`}
                     preserveAspectRatio="none"
                     width="100%"
                     height="100%"
                     className="sa-chart-svg"
+                    style={{ overflow: 'visible' }}
                 >
                     <defs>
-                        {/* Bar — Emerald resting */}
+                        {/* Bar Gradients */}
                         <linearGradient id="cBarNorm" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%"   stopColor="#10b981" stopOpacity="0.85" />
-                            <stop offset="100%" stopColor="#10b981" stopOpacity="0.25" />
+                            <stop offset="0%" stopColor={barGradient.start} stopOpacity="0.85" />
+                            <stop offset="100%" stopColor={barGradient.end} stopOpacity="0.75" />
                         </linearGradient>
-                        {/* Bar — Emerald active */}
                         <linearGradient id="cBarHov" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%"   stopColor="#059669" stopOpacity="1" />
-                            <stop offset="100%" stopColor="#10b981" stopOpacity="0.5" />
+                            <stop offset="0%" stopColor={barGradient.start} stopOpacity="1" />
+                            <stop offset="100%" stopColor={barGradient.end} stopOpacity="0.9" />
                         </linearGradient>
-                        {/* Trend-line area — Royal Blue */}
+
+                        {/* Trend Area Gradient */}
                         <linearGradient id="cArea" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%"   stopColor="#3b82f6" stopOpacity="0.15" />
-                            <stop offset="100%" stopColor="#3b82f6" stopOpacity="0" />
+                            <stop offset="0%" stopColor={trendColor} stopOpacity="0.4" />
+                            <stop offset="100%" stopColor={trendColor} stopOpacity="0.02" />
                         </linearGradient>
                     </defs>
 
@@ -395,9 +430,9 @@ const BarChartSVG: React.FC<{
                             <line key={i}
                                 x1={0} y1={y} x2={SVG_W} y2={y}
                                 stroke="currentColor" className="sa-grid-line"
-                                strokeWidth={i === 0 ? 1.5 : 0.7}
-                                strokeDasharray={i === 0 ? undefined : '5 5'}
-                                opacity={i === 0 ? 0.2 : 0.1}
+                                strokeWidth={0.8}
+                                strokeDasharray="4 4"
+                                opacity={0.1}
                             />
                         );
                     })}
@@ -405,12 +440,11 @@ const BarChartSVG: React.FC<{
                     {areaD && <path d={areaD} fill="url(#cArea)" />}
 
                     {data.map((d, i) => {
-                        const val  = metric === 'revenue' ? d.revenue : d.orders;
+                        const val = metric === 'revenue' ? d.revenue : d.orders;
                         const barH = niceMax > 0 ? (val / niceMax) * PLOT_H : 0;
-                        const bx   = i * COL_W + (COL_W - BAR_W) / 2;
-                        const by   = PLOT_TOP + PLOT_H - barH;
-                        const isH  = hoveredIdx === i;
-                        const rx   = 4;
+                        const bx = i * COL_W + (COL_W - BAR_W) / 2;
+                        const by = PLOT_TOP + PLOT_H - barH;
+                        const isH = hoveredIdx === i;
 
                         return (
                             <g key={i}
@@ -421,52 +455,16 @@ const BarChartSVG: React.FC<{
                                 <rect
                                     x={i * COL_W} y={PLOT_TOP}
                                     width={COL_W} height={PLOT_H}
-                                    fill={isH ? 'rgba(59,130,246,0.04)' : 'transparent'}
+                                    fill={isH ? 'hsl(var(--muted)/0.4)' : 'transparent'}
                                     rx={8}
                                 />
                                 {barH > 1 && (
-                                    <rect
-                                        x={bx} y={by}
-                                        width={BAR_W} height={barH}
-                                        rx={rx}
+                                    <path
+                                        d={getBarPath(bx, by, BAR_W, barH, 4)}
                                         fill={isH ? 'url(#cBarHov)' : 'url(#cBarNorm)'}
                                         className="sa-bar-animated"
                                     />
                                 )}
-                                {isH && barH > 1 && (() => {
-                                    const label = metric === 'revenue' ? fmtAmount(val) : String(val);
-                                    const pinW  = Math.max(label.length * 8 + 12, 40);
-                                    const pinX  = bx + BAR_W / 2 - pinW / 2;
-                                    return (
-                                        <g>
-                                            <rect
-                                                x={pinX} y={by - 26}
-                                                width={pinW} height={20}
-                                                rx={4} fill="hsl(var(--foreground))"
-                                            />
-                                            <text
-                                                x={bx + BAR_W / 2} y={by - 12}
-                                                textAnchor="middle"
-                                                fontSize="9" fontWeight="700"
-                                                fill="hsl(var(--background))"
-                                                fontFamily="Inter, sans-serif"
-                                            >
-                                                {label}
-                                            </text>
-                                        </g>
-                                    );
-                                })()}
-                                <text
-                                    x={i * COL_W + COL_W / 2}
-                                    y={CHART_H - 10}
-                                    textAnchor="middle"
-                                    fontSize="10"
-                                    fontWeight={isH ? '700' : '500'}
-                                    fill={isH ? 'hsl(var(--foreground))' : 'hsl(var(--muted-foreground))'}
-                                    fontFamily="Inter, sans-serif"
-                                >
-                                    {d.label}
-                                </text>
                             </g>
                         );
                     })}
@@ -474,7 +472,7 @@ const BarChartSVG: React.FC<{
                     {pathD && (
                         <path
                             d={pathD} fill="none"
-                            stroke="#3b82f6" strokeWidth="2"
+                            stroke={trendColor} strokeWidth="2.5"
                             strokeLinecap="round" strokeLinejoin="round"
                         />
                     )}
@@ -482,35 +480,93 @@ const BarChartSVG: React.FC<{
                     {linePts.map((pt, i) => (
                         <circle key={i}
                             cx={pt.x} cy={pt.y}
-                            r={hoveredIdx === i ? 5 : 3}
-                            fill={hoveredIdx === i ? '#3b82f6' : 'hsl(var(--card))'}
-                            stroke="#3b82f6" strokeWidth="2"
-                            style={{ transition: 'r 0.2s' }}
+                            r={hoveredIdx === i ? 5 : 4}
+                            fill={hoveredIdx === i ? trendColor : 'hsl(var(--card))'}
+                            stroke={trendColor} strokeWidth={hoveredIdx === i ? '0' : '2'}
+                            style={{ transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)' }}
                         />
                     ))}
                 </svg>
 
-                {hoveredIdx !== null && data[hoveredIdx] && (
-                    <div className="sa-chart-tooltip"
-                        style={{ left: `${((hoveredIdx + 0.5) / data.length) * 100}%` }}
-                    >
-                        <div className="sa-tt-header" style={{ background: 'hsl(var(--foreground))' }}>
-                            {data[hoveredIdx].label}
-                        </div>
-                        <div className="sa-tt-body">
-                            <div className="sa-tt-row">
-                                <span className="sa-tt-swatch" style={{ background: '#10b981' }} />
-                                <span className="sa-tt-key">Revenue</span>
-                                <span className="sa-tt-val">{fmtAmount(data[hoveredIdx].revenue)}</span>
+                {/* X-axis labels (Moved out of SVG to avoid horizontal squeezing) */}
+                <div style={{
+                    position: 'absolute',
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    height: '25px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    pointerEvents: 'none',
+                    paddingRight: '0', // Offset if needed
+                }}>
+                    {data.map((d, i) => {
+                        const isH = hoveredIdx === i;
+                        const showLabel = (data.length !== 24 || i % 2 === 0);
+                        return (
+                            <div key={i} style={{
+                                flex: 1,
+                                textAlign: 'center',
+                                fontSize: '10px',
+                                fontWeight: isH ? 800 : 600,
+                                color: isH ? 'hsl(var(--foreground))' : 'hsl(var(--muted-foreground))',
+                                opacity: showLabel ? 1 : 0,
+                                transform: isH ? 'scale(1.1)' : 'scale(1)',
+                                transition: 'all 0.2s ease',
+                                fontFamily: 'Inter, sans-serif'
+                            }}>
+                                {d.label}
                             </div>
-                            <div className="sa-tt-row">
-                                <span className="sa-tt-swatch" style={{ background: '#3b82f6' }} />
-                                <span className="sa-tt-key">Orders</span>
-                                <span className="sa-tt-val">{data[hoveredIdx].orders}</span>
+                        );
+                    })}
+                </div>
+
+
+                {hoveredIdx !== null && data[hoveredIdx] && (() => {
+                    const pct = (hoveredIdx + 0.5) / data.length;
+                    // Smart edge-aware positioning
+                    const isLeft = pct < 0.25;
+                    const isRight = pct > 0.75;
+                    const leftPc = `${pct * 100}%`;
+                    const transform = isLeft
+                        ? 'translateX(0)'
+                        : isRight
+                            ? 'translateX(-100%)'
+                            : 'translateX(-50%)';
+                    const arrowLeft = isLeft ? '18px' : isRight ? 'calc(100% - 24px)' : '50%';
+                    const d = data[hoveredIdx];
+                    return (
+                        <div
+                            className="sa-chart-tooltip"
+                            style={{ left: leftPc, transform }}
+                        >
+                            {/* Header */}
+                            <div className="sa-tt-header">
+                                <span className="sa-tt-time">{d.label}</span>
+                                {d.orders > 0 && (
+                                    <span className="sa-tt-orders-badge">{d.orders} order{d.orders !== 1 ? 's' : ''}</span>
+                                )}
                             </div>
+
+                            {/* Body rows */}
+                            <div className="sa-tt-body">
+                                <div className="sa-tt-row">
+                                    <span className="sa-tt-swatch" style={{ background: '#10b981' }} />
+                                    <span className="sa-tt-key">Revenue</span>
+                                    <span className="sa-tt-val" style={{ color: '#10b981' }}>{fmtAmount(d.revenue)}</span>
+                                </div>
+                                <div className="sa-tt-row">
+                                    <span className="sa-tt-swatch" style={{ background: '#3b82f6' }} />
+                                    <span className="sa-tt-key">Orders</span>
+                                    <span className="sa-tt-val" style={{ color: '#3b82f6' }}>{d.orders}</span>
+                                </div>
+                            </div>
+
+                            {/* Dynamic arrow */}
+                            <div className="sa-tt-arrow" style={{ left: arrowLeft }} />
                         </div>
-                    </div>
-                )}
+                    );
+                })()}
             </div>
         </div>
     );
@@ -832,7 +888,7 @@ export const SalesAnalysis: React.FC = () => {
                                 <span>{chartMetric === 'revenue' ? 'Revenue' : 'Orders'} (bars)</span>
                             </div>
                             <div className="sa-legend-item">
-                                <div className="sa-legend-line" />
+                                <div className="sa-legend-line" style={{ background: '#3b82f6' }} />
                                 <span>Order trend (line)</span>
                             </div>
                         </div>
@@ -847,43 +903,57 @@ export const SalesAnalysis: React.FC = () => {
                     </div>
                 </div>
 
-                {/* Payment Methods */}
-                <div className="sa-card sa-payment-card">
-                    <div className="sa-card-header">
-                        <div>
-                            <h2 className="sa-card-title">
-                                <CalendarDays size={18} />
-                                Payment Methods
-                            </h2>
-                            <p className="sa-card-subtitle">Revenue by payment type</p>
-                        </div>
-                    </div>
+                {/* Payment Methods — compact inline strip */}
+                <div style={{
+                    background: 'hsl(var(--card))',
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '1rem',
+                    padding: '0.75rem 1.25rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    flexWrap: 'wrap',
+                }}>
+                    <span style={{
+                        fontSize: '0.7rem',
+                        fontWeight: 700,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.08em',
+                        color: 'hsl(var(--muted-foreground))',
+                        marginRight: '0.25rem',
+                        whiteSpace: 'nowrap',
+                    }}>Payment Methods</span>
+
                     {paymentBreakdown.length === 0 ? (
-                        <div className="sa-empty-state">
-                            <IndianRupee size={36} />
-                            <p>No payment data</p>
+                        <span style={{ fontSize: '0.8rem', color: 'hsl(var(--muted-foreground))' }}>No data</span>
+                    ) : paymentBreakdown.map((pm, i) => (
+                        <div key={pm.method} style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.4rem',
+                            background: 'hsl(var(--muted) / 0.5)',
+                            border: '1px solid hsl(var(--border))',
+                            borderRadius: '999px',
+                            padding: '0.3rem 0.75rem',
+                        }}>
+                            <span style={{
+                                width: 7, height: 7,
+                                borderRadius: '50%',
+                                background: DISH_PALETTE[i % DISH_PALETTE.length],
+                                flexShrink: 0,
+                                display: 'inline-block',
+                            }} />
+                            <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'hsl(var(--foreground))' }}>
+                                {pm.method}
+                            </span>
+                            <span style={{ fontSize: '0.75rem', fontWeight: 700, color: 'hsl(var(--foreground))' }}>
+                                ₹{pm.amount.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                            </span>
+                            <span style={{ fontSize: '0.68rem', fontWeight: 600, color: 'hsl(var(--muted-foreground))' }}>
+                                {pm.pct}%
+                            </span>
                         </div>
-                    ) : (
-                        <div className="sa-payment-list">
-                            {paymentBreakdown.map((pm, i) => (
-                                <div key={pm.method} className="sa-payment-item">
-                                    <div className="sa-payment-method-row">
-                                        <div className="sa-payment-dot"
-                                            style={{ backgroundColor: DISH_PALETTE[i % DISH_PALETTE.length] }} />
-                                        <span className="sa-payment-name">{pm.method}</span>
-                                        <span className="sa-payment-pct">{pm.pct}%</span>
-                                        <span className="sa-payment-amount">
-                                            ₹{pm.amount.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
-                                        </span>
-                                    </div>
-                                    <div className="sa-progress-track">
-                                        <div className="sa-progress-fill"
-                                            style={{ width: `${pm.pct}%`, backgroundColor: DISH_PALETTE[i % DISH_PALETTE.length] }} />
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    )}
+                    ))}
                 </div>
             </div>
 
@@ -934,14 +1004,16 @@ export const SalesAnalysis: React.FC = () => {
                                         <tr key={dish.name} className="sa-dish-row">
                                             <td className="sa-td-center">
                                                 <span className="sa-rank-badge" style={{
-                                                    backgroundColor: idx === 0 ? '#10b981' : idx === 1 ? '#3b82f6' : idx === 2 ? '#8b5cf6' : 'hsl(var(--muted))',
-                                                    color: idx < 3 ? '#fff' : 'hsl(var(--muted-foreground))',
+                                                    backgroundColor: idx === 0 ? 'rgba(234, 179, 8, 0.15)' : idx === 1 ? 'rgba(148, 163, 184, 0.15)' : idx === 2 ? 'rgba(249, 115, 22, 0.15)' : 'transparent',
+                                                    color: idx === 0 ? '#eab308' : idx === 1 ? '#94a3b8' : idx === 2 ? '#f97316' : 'hsl(var(--muted-foreground))',
                                                 }}>{idx + 1}</span>
                                             </td>
-                                            <td className="sa-dish-name-cell">
-                                                <span className="sa-dish-color-dot"
-                                                    style={{ background: DISH_PALETTE[idx % DISH_PALETTE.length] }} />
-                                                <span className="sa-dish-name-text">{dish.name}</span>
+                                            <td>
+                                                <div className="sa-dish-name-cell">
+                                                    <span className="sa-dish-color-dot"
+                                                        style={{ background: DISH_PALETTE[idx % DISH_PALETTE.length] }} />
+                                                    <span className="sa-dish-name-text">{dish.name}</span>
+                                                </div>
                                             </td>
                                             <td className="sa-td-center">
                                                 <span className="sa-qty-badge">{dish.quantity}</span>
@@ -950,12 +1022,14 @@ export const SalesAnalysis: React.FC = () => {
                                                 ₹{dish.revenue.toLocaleString('en-IN', { maximumFractionDigits: 0 })}
                                             </td>
                                             <td className="sa-td-center sa-order-count-cell">{dish.orderCount}</td>
-                                            <td className="sa-share-cell">
-                                                <div className="sa-share-bar-track">
-                                                    <div className="sa-share-bar-fill"
-                                                        style={{ width: `${share}%`, background: DISH_PALETTE[idx % DISH_PALETTE.length] }} />
+                                            <td>
+                                                <div className="sa-share-cell">
+                                                    <div className="sa-share-bar-track">
+                                                        <div className="sa-share-bar-fill"
+                                                            style={{ width: `${share}%`, background: DISH_PALETTE[idx % DISH_PALETTE.length] }} />
+                                                    </div>
+                                                    <span className="sa-share-pct">{Math.round(share)}%</span>
                                                 </div>
-                                                <span className="sa-share-pct">{Math.round(share)}%</span>
                                             </td>
                                         </tr>
                                     );

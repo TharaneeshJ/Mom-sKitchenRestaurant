@@ -188,11 +188,17 @@ export const BillingDashboard: React.FC = () => {
                                                     {order.items.length} items
                                                 </div>
                                             </td>
-                                            {/* Kitchen status — uses order.status (PENDING/COOKING/READY/SERVED) */}
+                                            {/* Kitchen status — caps at Served; Paid is shown in Payment column only */}
                                             <td>
-                                                <span className={`status-badge status-${(order.status || 'pending').toLowerCase()}`}>
-                                                    {(order.status || 'Pending').charAt(0).toUpperCase() + (order.status || 'Pending').slice(1).toLowerCase()}
-                                                </span>
+                                                {(() => {
+                                                    const raw = (order.status || 'pending').toLowerCase();
+                                                    const kitchenStatus = raw === 'paid' ? 'served' : raw;
+                                                    return (
+                                                        <span className={`status-badge status-${kitchenStatus}`}>
+                                                            {kitchenStatus.charAt(0).toUpperCase() + kitchenStatus.slice(1)}
+                                                        </span>
+                                                    );
+                                                })()}
                                             </td>
                                             {/* Payment status — uses order.paymentStatus (from Supabase payment_status) */}
                                             <td>
